@@ -1,0 +1,214 @@
+@startuml ClinicaVeterinaria
+title Diagrama de Clases - Sistema de Clínica Veterinaria
+skinparam classBackgroundColor #F8F9FA
+skinparam classBorderColor #2C3E50
+skinparam arrowColor #34495E
+skinparam stereotypeCBackgroundColor #ECF0F1
+
+' =============================================================================
+' PILAR 1: ABSTRACCIÓN - Clase generalizadora Persona
+' =============================================================================
+abstract class Persona {
+    -nombre: String
+    -documento: String
+    --
+    +mostrar_rol(): String
+}
+
+' =============================================================================
+' PILAR 2: HERENCIA - Clases que heredan de Persona
+' =============================================================================
+class Veterinario {
+    -licencia: String
+    -especialidad: String
+    --
+    +diagnosticar(): String
+    +prescribir_tratamiento(): void
+}
+
+class Recepcionista {
+    -turno: String
+    --
+    +registrar_cita(): void
+    +procesar_pago(): void
+}
+
+class Cliente {
+    -telefono: String
+    -email: String
+    -direccion: String
+    --
+    +obtener_mascotas(): List<Mascota>
+}
+
+Persona <|-- Veterinario
+Persona <|-- Recepcionista
+Persona <|-- Cliente
+
+' =============================================================================
+' PILAR 4: AGREGACIÓN - Clientes y sus Mascotas
+' Agregación: las mascotas pueden existir sin el cliente (cambio de dueño)
+' =============================================================================
+class Mascota {
+    -nombre: String
+    -especie: String
+    -raza: String
+    -fecha_nacimiento: Date
+    -historial_medico: String
+    --
+    +obtener_edad(): int
+}
+
+Cliente o-- Mascota : posee >
+
+' =============================================================================
+' PILAR 3: ASOCIACIÓN - Relación muchos a muchos (Veterinario-Mascota)
+' Delegar responsabilidad a la entidad Consulta
+' =============================================================================
+class Consulta {
+    -id_consulta: int
+    -fecha: Date
+    -hora: String
+    -motivo: String
+    -diagnostico: String
+    -notas: String
+    --
+    +crear_consulta(): void
+    +actualizar_diagnostico(): void
+}
+
+Veterinario "1" --> "*" Consulta : realiza
+Mascota "1" --> "*" Consulta : recibe
+
+' =============================================================================
+' PILAR 5: COMPOSICIÓN - Tratamientos derivados de Consultas
+' Composición: el tratamiento existe solo en contexto de consulta
+' =============================================================================
+class Tratamiento {
+    -id_tratamiento: int
+    -tipo: String
+    -descripcion: String
+    -medicamentos: String
+    -duracion_dias: int
+    -costo: float
+    --
+    +iniciar_tratamiento(): void
+    +registrar_progreso(): void
+}
+
+Consulta *-- Tratamiento : genera >
+
+' =============================================================================
+' Hospitalización - Extensión natural del sistema
+' =============================================================================
+class Hospitalizacion {
+    -id_hospitalizacion: int
+    -fecha_ingreso: Date
+    -fecha_salida: Date
+    -razon: String
+    -costo_diario: float
+    --
+    +calcular_costo_total(): float
+}
+
+Mascota "1" --> "*" Hospitalizacion : puede requerir
+Veterinario "1" --> "*" Hospitalizacion : supervisa
+
+' =============================================================================
+' PILAR 6: POLIMORFISMO - Métodos de Pago
+' =============================================================================
+abstract class MetodoPago {
+    -numero_referencia: String
+    --
+    +procesar_pago(monto: float): boolean
+    +validar_datos(): boolean
+}
+
+class PagoEfectivo {
+    -billete_mayor: float
+    --
+    +procesar_pago(monto: float): boolean
+}
+
+class PagoTarjeta {
+    -numero_tarjeta: String
+    -cvv: String
+    -fecha_vencimiento: String
+    --
+    +procesar_pago(monto: float): boolean
+    +validar_tarjeta(): boolean
+}
+
+class PagoTransferencia {
+    -cuenta_origen: String
+    -cuenta_destino: String
+    -banco: String
+    --
+    +procesar_pago(monto: float): boolean
+    +generar_referencia(): String
+}
+
+MetodoPago <|-- PagoEfectivo
+MetodoPago <|-- PagoTarjeta
+MetodoPago <|-- PagoTransferencia
+
+' =============================================================================
+' Factura - Utiliza polimorfismo de MetodoPago
+' =============================================================================
+class Factura {
+    -id_factura: int
+    -fecha: Date
+    -cliente: Cliente
+    -total: float
+    -estado: String
+    --
+    +generar_factura(): void
+    +procesar_pago(metodo: MetodoPago): boolean
+    +obtener_total(): float
+}
+
+Factura --> MetodoPago : utiliza >
+Factura --> Cliente : emitida a
+Factura --> "*" Tratamiento : detalla
+Factura --> "*" Hospitalizacion : incluye
+
+' =============================================================================
+' Notas aclaratorias
+' =============================================================================
+note bottom of Persona
+    PILAR 1: ABSTRACCIÓN
+    Clase base que generaliza atributos
+    y comportamientos comunes
+end note
+
+note bottom of Veterinario
+    PILAR 2: HERENCIA
+    Especialización de Persona
+    con funcionalidades médicas
+end note
+
+note bottom of Consulta
+    PILAR 3: ASOCIACIÓN
+    Resuelve relación muchos-a-muchos
+    entre Veterinario y Mascota
+end note
+
+note bottom of Cliente
+    PILAR 4: AGREGACIÓN
+    Cliente posee Mascotas, pero éstas
+    pueden existir independientemente
+end note
+
+note bottom of Tratamiento
+    PILAR 5: COMPOSICIÓN
+    Tratamiento existe solo dentro
+    del contexto de una Consulta
+end note
+
+note bottom of MetodoPago
+    PILAR 6: POLIMORFISMO
+    Interfaz común para múltiples
+    formas de pago
+end note
+
+@enduml
